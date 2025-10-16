@@ -35,6 +35,7 @@ class HTTPMCPServer {
   async searchDoorKnowledge(query, category, limit = 10) {
     const index = await this.loadSearchIndex();
     const searchTerm = query.toLowerCase();
+    const totalDocuments = index.documents.length;
 
     let results = index.documents.filter(doc => {
       if (category && doc.category.toLowerCase() !== category.toLowerCase()) {
@@ -42,6 +43,8 @@ class HTTPMCPServer {
       }
       return doc.keywords.includes(searchTerm);
     });
+
+    const foundRelevant = results.length;
 
     results = results
       .map(doc => {
@@ -51,7 +54,15 @@ class HTTPMCPServer {
       .sort((a, b) => b.relevance - a.relevance)
       .slice(0, limit);
 
-    return results;
+    // Agregar metadata de búsqueda
+    const searchMetadata = {
+      totalDocuments,
+      foundRelevant,
+      returned: results.length,
+      indexGeneratedAt: index.generatedAt
+    };
+
+    return { results, searchMetadata };
   }
 
   async getDoorDocument(documentId) {
@@ -119,12 +130,20 @@ class HTTPMCPServer {
           return;
         }
 
-        const results = await this.searchDoorKnowledge(query, category, limit);
+        const { results, searchMetadata } = await this.searchDoorKnowledge(query, category, limit);
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           query,
           totalResults: results.length,
-          results
+          results,
+          metadata: {
+            searched: searchMetadata.totalDocuments,
+            foundRelevant: searchMetadata.foundRelevant,
+            returned: searchMetadata.returned,
+            indexLastUpdated: searchMetadata.indexGeneratedAt,
+            disclaimer: '⚠️ Always verify critical information with official Door documentation at support.door.com'
+          }
         }));
         return;
       }
