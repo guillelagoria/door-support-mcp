@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+*.log
+.env
+.vscode/
+*.pyc
+__pycache__/
+latch_knowledge_base/.sync_state.json
+
+# PDFs binarios (solo guardamos los Markdowns extraídos)
+latch_knowledge_base/_pdfs_extracted/*.pdf

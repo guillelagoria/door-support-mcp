@@ -1,0 +1,33 @@
+{
+  "name": "door-knowledge-mcp",
+  "version": "1.0.0",
+  "description": "Door Support MCP Server with HTTP API",
+  "main": "door-knowledge-mcp-server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node door-knowledge-mcp-server.js",
+    "start-http": "node server-http.js",
+    "sync": "node door-knowledge-sync.js ./door_knowledge_base",
+    "process-door": "node door-knowledge-pdf-processor-v2.js ./door_knowledge_base",
+    "build-index": "node build-search-index-complete.js",
+    "clean": "rm -rf ./door_knowledge_base/_pdfs_extracted/*.pdf",
+    "reprocess": "npm run clean && npm run process-door && npm run build-index"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "door",
+    "knowledge-base"
+  ],
+  "author": "Guille Lagoria",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "pdfjs-dist": "^4.0.379",
+    "node-fetch": "^3.3.2",
+    "glob": "^10.3.10"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
