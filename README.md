@@ -27,7 +27,7 @@ Agrega esta configuración:
   "mcpServers": {
     "door-knowledge": {
       "command": "npx",
-      "args": ["-y", "mcp-http-client", "https://door-support-mcp-production.up.railway.app"]
+      "args": ["-y", "mcp-http-client", "https://knowledge-mcp-production.up.railway.app"]
     }
   }
 }
@@ -90,7 +90,7 @@ Si prefieres ejecutar el servidor localmente (por ejemplo, para desarrollo):
 
 El servidor HTTP está desplegado en Railway y expone los siguientes endpoints:
 
-**Base URL**: `https://door-support-mcp-production.up.railway.app`
+**Base URL**: `https://knowledge-mcp-production.up.railway.app`
 
 - `GET /health` - Estado del servidor
 - `GET /api/search?query=<term>&category=<cat>&limit=<num>` - Búsqueda de documentos
@@ -100,16 +100,16 @@ El servidor HTTP está desplegado en Railway y expone los siguientes endpoints:
 Ejemplos:
 ```bash
 # Health check
-curl "https://door-support-mcp-production.up.railway.app/health"
+curl "https://knowledge-mcp-production.up.railway.app/health"
 
 # Buscar documentos
-curl "https://door-support-mcp-production.up.railway.app/api/search?query=installation&limit=5"
+curl "https://knowledge-mcp-production.up.railway.app/api/search?query=installation&limit=5"
 
 # Listar categorías
-curl "https://door-support-mcp-production.up.railway.app/api/categories"
+curl "https://knowledge-mcp-production.up.railway.app/api/categories"
 
 # Obtener documento específico
-curl "https://door-support-mcp-production.up.railway.app/api/document?id=DOCUMENT_ID"
+curl "https://knowledge-mcp-production.up.railway.app/api/document?id=DOCUMENT_ID"
 ```
 
 ### Herramientas Disponibles
