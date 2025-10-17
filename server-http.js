@@ -18,6 +18,34 @@ class HTTPMCPServer {
     this.knowledgeBasePath = path.join(__dirname, 'door_knowledge_base');
     this.searchIndexPath = path.join(__dirname, 'door_knowledge_base', '_pdfs_extracted', 'search-index.json');
     this.searchIndex = null;
+
+    // API Key authentication
+    this.apiKeys = new Set((process.env.API_KEYS || '').split(',').filter(k => k.trim()));
+
+    // Log authentication status
+    if (this.apiKeys.size === 0) {
+      console.warn('⚠️  WARNING: No API keys configured! Server is PUBLIC.');
+      console.warn('   Set API_KEYS environment variable to enable authentication.');
+    } else {
+      console.log(`✅ Authentication enabled with ${this.apiKeys.size} API key(s)`);
+    }
+  }
+
+  // Validate API key from request
+  isValidApiKey(req) {
+    // If no keys configured, allow access (development mode)
+    if (this.apiKeys.size === 0) {
+      return true;
+    }
+
+    // Get API key from header (supports both X-API-Key and Authorization: Bearer)
+    const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+
+    if (!apiKey) {
+      return false;
+    }
+
+    return this.apiKeys.has(apiKey.trim());
   }
 
   async loadSearchIndex() {
@@ -92,10 +120,10 @@ class HTTPMCPServer {
   }
 
   async handleRequest(req, res) {
-    // CORS headers
+    // CORS headers (allow API key header)
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization');
 
     if (req.method === 'OPTIONS') {
       res.writeHead(200);
@@ -103,17 +131,45 @@ class HTTPMCPServer {
       return;
     }
 
-    const url = new URL(req.url, `http://${req.headers.host}`);
+    // Validar URL antes de parsearla (previene crashes por URLs malformadas de bots)
+    let url;
+    try {
+      // Validar que req.url no esté vacío y tenga un formato válido
+      if (!req.url || req.url === '//' || req.url.trim() === '') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid URL' }));
+        return;
+      }
+      url = new URL(req.url, `http://${req.headers.host}`);
+    } catch (urlError) {
+      // Si la URL es inválida, retornar 400 sin crashear
+      console.warn(`⚠️ Invalid URL request: ${req.url}`);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid URL format' }));
+      return;
+    }
 
     try {
-      // Health check
+      // Health check - ALWAYS public (for Railway health checks)
       if (url.pathname === '/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           status: 'ok',
           service: 'door-knowledge-mcp',
-          version: '1.0',
-          documents: this.searchIndex?.totalDocuments || 0
+          version: '2.2',
+          documents: this.searchIndex?.totalDocuments || 0,
+          authenticated: this.apiKeys.size > 0
+        }));
+        return;
+      }
+
+      // Validate authentication for all endpoints except /health
+      if (!this.isValidApiKey(req)) {
+        console.warn(`⚠️ Unauthorized access attempt from ${req.socket.remoteAddress} to ${url.pathname}`);
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          error: 'Unauthorized',
+          message: 'Valid API key required. Use X-API-Key header or Authorization: Bearer <key>'
         }));
         return;
       }
